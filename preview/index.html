@@ -1,0 +1,1129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
+<title>NutriTrack AI — Preview</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Inter', system-ui, sans-serif; background: #0f172a; color: #1f2937; min-height: 100vh; display: flex; flex-direction: column; align-items: center; padding: 32px 16px 60px; -webkit-font-smoothing: antialiased; }
+
+  /* ── Screen chrome ── */
+  .device { width: 390px; background: #f9fafb; border-radius: 44px; overflow: hidden; box-shadow: 0 32px 80px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.08), inset 0 0 0 8px #1c1c1e; position: relative; }
+  .device-bar { height: 44px; background: #f9fafb; display: flex; align-items: center; justify-content: center; }
+  .status-pill { width: 120px; height: 34px; background: #1c1c1e; border-radius: 20px; display: flex; align-items: center; justify-content: center; gap: 6px; }
+  .status-pill .time { color: #fff; font-size: 13px; font-weight: 600; }
+  .screen-wrap { height: 780px; overflow: hidden; position: relative; background: #f9fafb; }
+
+  /* ── Screens ── */
+  .screen { position: absolute; inset: 0; overflow-y: auto; scrollbar-width: none; display: none; }
+  .screen::-webkit-scrollbar { display: none; }
+  .screen.active { display: block; }
+
+  /* ── Tab bar at bottom ── */
+  .bottom-nav { height: 68px; background: rgba(255,255,255,0.96); backdrop-filter: blur(12px); border-top: 1px solid #f3f4f6; display: flex; align-items: center; justify-content: space-around; padding: 0 8px 10px; }
+  .nav-item { display: flex; flex-direction: column; align-items: center; gap: 3px; min-width: 56px; cursor: pointer; padding: 6px 8px; border-radius: 12px; transition: all 0.15s; }
+  .nav-item svg { width: 22px; height: 22px; stroke: #9ca3af; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; transition: stroke 0.15s; }
+  .nav-item .nav-label { font-size: 10px; font-weight: 500; color: #9ca3af; transition: color 0.15s; }
+  .nav-item.active svg { stroke: #16a34a; }
+  .nav-item.active .nav-label { color: #16a34a; }
+  .nav-item.active { background: #f0fdf4; }
+
+  /* ── Navbar ── */
+  .topbar { height: 56px; background: rgba(255,255,255,0.95); backdrop-filter: blur(8px); border-bottom: 1px solid #f3f4f6; display: flex; align-items: center; justify-content: space-between; padding: 0 16px; position: sticky; top: 0; z-index: 10; }
+  .logo { display: flex; align-items: center; gap: 8px; }
+  .logo-icon { width: 32px; height: 32px; background: linear-gradient(135deg, #4ade80, #16a34a); border-radius: 10px; display: flex; align-items: center; justify-content: center; color: white; font-weight: 800; font-size: 14px; }
+  .logo-text { font-weight: 700; font-size: 15px; color: #111827; }
+  .avatar { width: 32px; height: 32px; background: linear-gradient(135deg, #4ade80, #d946ef); border-radius: 10px; display: flex; align-items: center; justify-content: center; color: white; font-weight: 700; font-size: 13px; }
+
+  /* ── Cards ── */
+  .card { background: white; border-radius: 20px; padding: 18px; box-shadow: 0 1px 3px rgba(0,0,0,0.04), 0 4px 16px rgba(0,0,0,0.05); }
+  .card-sm { border-radius: 16px; padding: 14px; }
+
+  /* ── Utility ── */
+  .page { padding: 14px 14px 0; display: flex; flex-direction: column; gap: 14px; }
+  .row { display: flex; align-items: center; justify-content: space-between; }
+  .section-title { font-size: 13px; font-weight: 600; color: #374151; }
+  .text-muted { font-size: 12px; color: #9ca3af; }
+  .text-xs { font-size: 11px; }
+  .badge { display: inline-flex; align-items: center; padding: 2px 8px; border-radius: 20px; font-size: 10px; font-weight: 600; }
+  .badge-green { background: #dcfce7; color: #15803d; }
+  .badge-blue { background: #dbeafe; color: #1d4ed8; }
+  .badge-orange { background: #ffedd5; color: #c2410c; }
+
+  /* ── Calorie ring ── */
+  .ring-wrap { display: flex; flex-direction: column; align-items: center; padding: 20px 0 12px; }
+  .ring-text-main { font-size: 36px; font-weight: 800; color: #111827; line-height: 1; }
+  .ring-text-sub { font-size: 11px; color: #9ca3af; font-weight: 500; margin-top: 2px; }
+  .ring-consumed { font-size: 12px; color: #6b7280; margin-top: 4px; }
+
+  /* ── Macro bars ── */
+  .macro-row { display: flex; gap: 10px; }
+  .macro-item { flex: 1; }
+  .macro-label { display: flex; justify-content: space-between; font-size: 10px; color: #9ca3af; margin-bottom: 5px; font-weight: 500; }
+  .progress-track { height: 8px; background: #f3f4f6; border-radius: 4px; overflow: hidden; }
+  .progress-fill { height: 100%; border-radius: 4px; transition: width 1s ease; }
+  .macro-val { font-size: 16px; font-weight: 700; text-align: center; padding: 8px 0 6px; border-radius: 12px; margin-top: 6px; }
+
+  /* ── Water ── */
+  .water-cups { display: flex; gap: 5px; flex-wrap: wrap; margin: 8px 0; }
+  .cup { width: 26px; height: 30px; border-radius: 6px; border: 2px solid; transition: all 0.3s; }
+  .cup.filled { background: #38bdf8; border-color: #38bdf8; }
+  .cup.empty { border-color: #e5e7eb; }
+  .water-btns { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin-top: 8px; }
+  .water-btn { background: #eff6ff; color: #2563eb; border: none; border-radius: 10px; padding: 8px 4px; font-size: 10px; font-weight: 600; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 2px; }
+
+  /* ── Meal timeline ── */
+  .meal-group { margin-bottom: 12px; }
+  .meal-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }
+  .meal-name { font-size: 13px; font-weight: 600; color: #374151; }
+  .meal-entry { display: flex; align-items: center; justify-content: space-between; padding: 10px 12px; background: #f9fafb; border-radius: 12px; margin-bottom: 4px; }
+  .entry-name { font-size: 12px; font-weight: 500; color: #1f2937; }
+  .entry-macro { font-size: 10px; color: #9ca3af; margin-top: 2px; }
+  .entry-kcal { font-size: 13px; font-weight: 700; color: #374151; }
+
+  /* ── Log methods ── */
+  .method-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+  .method-btn { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 14px 8px; border-radius: 16px; border: 2px solid #f3f4f6; background: white; cursor: pointer; transition: all 0.15s; }
+  .method-btn.active { border-color: #4ade80; background: #f0fdf4; }
+  .method-icon { width: 40px; height: 40px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 18px; }
+  .method-label { font-size: 10px; font-weight: 600; color: #6b7280; }
+  .method-btn.active .method-label { color: #15803d; }
+
+  /* ── Photo logger ── */
+  .photo-zone { background: #f9fafb; border: 2px dashed #d1d5db; border-radius: 16px; padding: 32px 16px; display: flex; flex-direction: column; align-items: center; gap: 8px; cursor: pointer; }
+  .photo-zone:hover { border-color: #4ade80; background: #f0fdf4; }
+
+  /* ── AI result card ── */
+  .ai-result { background: #f0fdf4; border: 1.5px solid #86efac; border-radius: 16px; padding: 14px; }
+  .ai-food-row { display: flex; justify-content: space-between; align-items: start; margin-bottom: 8px; }
+  .confidence-bar { height: 4px; background: #d1fae5; border-radius: 2px; overflow: hidden; margin-top: 6px; }
+  .confidence-fill { height: 100%; background: #4ade80; border-radius: 2px; }
+
+  /* ── Analytics ── */
+  .chart-placeholder { background: linear-gradient(to top, #f0fdf420, #dcfce780); border-radius: 12px; height: 140px; display: flex; align-items: flex-end; justify-content: space-around; padding: 0 8px 8px; }
+  .bar { border-radius: 6px 6px 0 0; transition: height 0.8s ease; min-width: 28px; }
+  .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .stat-card { background: white; border-radius: 16px; padding: 14px; box-shadow: 0 1px 3px rgba(0,0,0,0.04), 0 4px 12px rgba(0,0,0,0.04); }
+  .stat-icon { width: 36px; height: 36px; border-radius: 10px; display: flex; align-items: center; justify-content: center; margin-bottom: 8px; font-size: 16px; }
+  .stat-val { font-size: 22px; font-weight: 800; color: #111827; line-height: 1.1; }
+  .stat-unit { font-size: 12px; font-weight: 400; color: #9ca3af; margin-left: 2px; }
+  .stat-label { font-size: 11px; color: #9ca3af; margin-top: 2px; }
+
+  /* ── Recipes ── */
+  .recipe-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .recipe-card { background: white; border-radius: 18px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.04), 0 4px 12px rgba(0,0,0,0.05); }
+  .recipe-img { height: 110px; object-fit: cover; width: 100%; display: block; position: relative; }
+  .recipe-img-bg { height: 110px; display: flex; align-items: center; justify-content: center; font-size: 36px; }
+  .recipe-body { padding: 10px; }
+  .recipe-title { font-size: 12px; font-weight: 600; color: #1f2937; margin-bottom: 4px; line-height: 1.3; }
+  .recipe-meta { display: flex; align-items: center; gap: 8px; font-size: 10px; color: #9ca3af; }
+  .recipe-macros { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; margin-top: 8px; }
+  .recipe-macro { padding: 4px 2px; border-radius: 8px; text-align: center; }
+  .recipe-macro-val { font-size: 12px; font-weight: 700; }
+  .recipe-macro-label { font-size: 9px; color: #9ca3af; }
+  .heart-btn { position: absolute; top: 6px; right: 6px; width: 26px; height: 26px; background: rgba(255,255,255,0.9); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; cursor: pointer; }
+
+  /* ── Profile ── */
+  .profile-header { background: linear-gradient(135deg, #f0fdf4, #fdf4ff); border-radius: 20px; padding: 20px; display: flex; align-items: center; gap: 14px; }
+  .profile-avatar { width: 64px; height: 64px; background: linear-gradient(135deg, #4ade80, #d946ef); border-radius: 20px; display: flex; align-items: center; justify-content: center; font-size: 28px; color: white; font-weight: 800; }
+  .metric-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .metric-card { background: white; border-radius: 14px; padding: 12px; text-align: center; box-shadow: 0 1px 3px rgba(0,0,0,0.04), 0 2px 8px rgba(0,0,0,0.04); }
+  .metric-val { font-size: 18px; font-weight: 800; color: #111827; }
+  .metric-label { font-size: 10px; color: #9ca3af; margin-top: 2px; }
+
+  /* ── Insights ── */
+  .insight-card { display: flex; gap: 10px; padding: 12px; border-radius: 14px; border: 1.5px solid; }
+  .insight-icon { font-size: 20px; flex-shrink: 0; }
+  .insight-title { font-size: 12px; font-weight: 600; }
+  .insight-msg { font-size: 11px; color: #6b7280; margin-top: 2px; line-height: 1.4; }
+  .insight-tip { font-size: 10px; font-style: italic; color: #9ca3af; margin-top: 3px; }
+
+  /* ── Nutrition score ── */
+  .score-wrap { display: flex; align-items: center; gap: 12px; }
+  .score-ring { position: relative; width: 60px; height: 60px; }
+  .score-inner { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 800; color: #15803d; }
+
+  /* ── Landing ── */
+  .landing { padding: 0; }
+  .hero { background: linear-gradient(160deg, #f0fdf4 0%, #fdf4ff 50%, #eff6ff 100%); padding: 28px 18px 24px; }
+  .hero-badge { display: inline-flex; align-items: center; gap: 6px; background: #dcfce7; color: #15803d; padding: 4px 12px; border-radius: 20px; font-size: 11px; font-weight: 600; margin-bottom: 14px; }
+  .hero-h1 { font-size: 26px; font-weight: 900; color: #111827; line-height: 1.2; margin-bottom: 10px; }
+  .hero-accent { color: #16a34a; }
+  .hero-sub { font-size: 13px; color: #6b7280; line-height: 1.6; margin-bottom: 18px; }
+  .hero-btn { display: block; width: 100%; padding: 14px; background: #16a34a; color: white; border: none; border-radius: 16px; font-size: 15px; font-weight: 700; cursor: pointer; text-align: center; box-shadow: 0 0 20px rgba(34,197,94,0.3); }
+  .hero-btn-outline { display: block; width: 100%; padding: 13px; background: white; color: #374151; border: 1.5px solid #e5e7eb; border-radius: 16px; font-size: 15px; font-weight: 600; cursor: pointer; text-align: center; margin-top: 8px; }
+  .features-section { padding: 20px 16px; }
+  .features-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 14px; }
+  .feature-card { background: white; border-radius: 16px; padding: 14px; box-shadow: 0 1px 3px rgba(0,0,0,0.04), 0 4px 12px rgba(0,0,0,0.04); }
+  .feature-icon { width: 40px; height: 40px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 18px; margin-bottom: 8px; }
+  .feature-title { font-size: 12px; font-weight: 700; color: #1f2937; margin-bottom: 3px; }
+  .feature-desc { font-size: 10px; color: #9ca3af; line-height: 1.4; }
+  .stats-section { background: #f0fdf4; padding: 20px 16px; }
+  .stats-row { display: flex; justify-content: space-around; }
+  .stat-hero { text-align: center; }
+  .stat-hero-val { font-size: 28px; font-weight: 900; color: #16a34a; }
+  .stat-hero-label { font-size: 11px; color: #6b7280; margin-top: 2px; }
+
+  /* ── Nav pills (screen selector) ── */
+  .screen-nav { display: flex; gap: 8px; margin-bottom: 24px; flex-wrap: wrap; justify-content: center; }
+  .screen-pill { padding: 8px 16px; border-radius: 20px; border: 1.5px solid rgba(255,255,255,0.15); color: rgba(255,255,255,0.6); font-size: 12px; font-weight: 600; cursor: pointer; transition: all 0.2s; background: transparent; }
+  .screen-pill:hover { border-color: rgba(255,255,255,0.4); color: rgba(255,255,255,0.9); }
+  .screen-pill.active { background: #16a34a; border-color: #16a34a; color: white; }
+
+  /* ── Page header ── */
+  .page-title { font-size: 20px; font-weight: 800; color: #111827; }
+  .page-subtitle { font-size: 12px; color: #9ca3af; margin-top: 2px; }
+
+  /* ── FAB ── */
+  .fab { position: fixed; bottom: 86px; right: 20px; width: 52px; height: 52px; background: #16a34a; border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 20px rgba(22,163,74,0.45); color: white; font-size: 26px; font-weight: 300; cursor: pointer; z-index: 20; }
+
+  /* ── Scroll hint ── */
+  .scroll-hint { text-align: center; font-size: 11px; color: rgba(255,255,255,0.4); margin-top: 12px; }
+
+  /* ── Onboarding ── */
+  .progress-steps { display: flex; gap: 6px; margin-bottom: 20px; }
+  .step-bar { flex: 1; height: 4px; border-radius: 2px; background: #e5e7eb; transition: background 0.4s; }
+  .step-bar.done { background: #16a34a; }
+  .choice-btn { width: 100%; padding: 12px 14px; border: 2px solid #e5e7eb; border-radius: 14px; background: white; text-align: left; cursor: pointer; display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; transition: all 0.15s; font-family: inherit; }
+  .choice-btn.selected { border-color: #4ade80; background: #f0fdf4; }
+  .choice-btn-label { font-size: 13px; font-weight: 500; color: #1f2937; }
+  .choice-btn-desc { font-size: 11px; color: #9ca3af; }
+
+  /* ── Voice ── */
+  .mic-btn { width: 90px; height: 90px; border-radius: 50%; background: #16a34a; display: flex; align-items: center; justify-content: center; box-shadow: 0 0 0 12px #dcfce7, 0 0 0 24px #f0fdf4; margin: 20px auto; cursor: pointer; transition: all 0.2s; font-size: 36px; }
+  .wave-bars { display: flex; gap: 4px; justify-content: center; align-items: flex-end; height: 32px; margin: 8px 0; }
+  .wave-bar { width: 4px; background: #4ade80; border-radius: 2px; animation: wave 0.8s ease-in-out infinite; }
+  .wave-bar:nth-child(2) { animation-delay: 0.15s; }
+  .wave-bar:nth-child(3) { animation-delay: 0.3s; }
+  .wave-bar:nth-child(4) { animation-delay: 0.15s; }
+  .wave-bar:nth-child(5) { animation-delay: 0s; }
+  @keyframes wave {
+    0%, 100% { height: 8px; }
+    50% { height: 28px; }
+  }
+
+  /* ── Achievement ── */
+  .ach-card { display: flex; align-items: center; gap: 12px; background: white; padding: 14px; border-radius: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.04), 0 2px 8px rgba(0,0,0,0.04); margin-bottom: 8px; }
+  .ach-icon { width: 52px; height: 52px; border-radius: 16px; display: flex; align-items: center; justify-content: center; font-size: 24px; flex-shrink: 0; }
+  .ach-name { font-size: 13px; font-weight: 700; color: #1f2937; }
+  .ach-desc { font-size: 11px; color: #9ca3af; margin-top: 2px; }
+  .ach-pts { font-size: 13px; font-weight: 800; color: #d97706; margin-left: auto; }
+  .ach-pts-label { font-size: 9px; color: #9ca3af; text-align: center; }
+  .locked { opacity: 0.4; filter: grayscale(1); }
+
+  /* ── Weight chart ── */
+  .mini-chart { height: 100px; display: flex; align-items: flex-end; gap: 2px; padding: 0 4px; }
+  .chart-line-svg { width: 100%; height: 100px; }
+
+  /* hero‑anim pulse on ring */
+  @keyframes ring-pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.7; } }
+  .ring-svg { animation: ring-pulse 2.5s ease-in-out infinite; }
+</style>
+</head>
+<body>
+
+<!-- ── Screen selector ── -->
+<div style="text-align:center;margin-bottom:8px;">
+  <div style="display:inline-flex;align-items:center;gap:10px;margin-bottom:16px;">
+    <div style="width:36px;height:36px;background:linear-gradient(135deg,#4ade80,#16a34a);border-radius:10px;display:flex;align-items:center;justify-content:center;color:white;font-weight:800;font-size:16px;">N</div>
+    <span style="color:white;font-size:20px;font-weight:800;">NutriTrack AI</span>
+    <span style="background:#16a34a;color:white;font-size:10px;font-weight:700;padding:3px 8px;border-radius:20px;">Preview</span>
+  </div>
+</div>
+
+<div class="screen-nav">
+  <button class="screen-pill" onclick="show('landing')">🏠 Landing</button>
+  <button class="screen-pill active" onclick="show('dashboard')">📊 Dashboard</button>
+  <button class="screen-pill" onclick="show('log')">➕ Log Food</button>
+  <button class="screen-pill" onclick="show('analytics')">📈 Analytics</button>
+  <button class="screen-pill" onclick="show('recipes')">🍲 Recipes</button>
+  <button class="screen-pill" onclick="show('profile')">👤 Profile</button>
+  <button class="screen-pill" onclick="show('onboarding')">✨ Onboarding</button>
+  <button class="screen-pill" onclick="show('achievements')">🏆 Achievements</button>
+</div>
+
+<!-- ── Device ── -->
+<div class="device">
+  <div class="device-bar">
+    <div class="status-pill">
+      <span class="time">9:41</span>
+    </div>
+  </div>
+
+  <div class="screen-wrap">
+
+    <!-- ═══════════════════ LANDING ═══════════════════ -->
+    <div id="screen-landing" class="screen">
+      <!-- Topbar -->
+      <div class="topbar">
+        <div class="logo"><div class="logo-icon">N</div><span class="logo-text">NutriTrack AI</span></div>
+        <button style="background:#16a34a;color:white;border:none;padding:7px 14px;border-radius:10px;font-size:12px;font-weight:600;cursor:pointer;">Get started</button>
+      </div>
+      <div class="landing">
+        <div class="hero">
+          <div class="hero-badge">⚡ Powered by Claude AI</div>
+          <h1 class="hero-h1">Track nutrition in<br><span class="hero-accent">under 5 seconds</span></h1>
+          <p class="hero-sub">AI photo recognition, voice logging & barcode scanning. The smartest nutrition tracker ever built.</p>
+          <button class="hero-btn">Create free account →</button>
+          <button class="hero-btn-outline">Sign in</button>
+        </div>
+
+        <div class="features-section">
+          <div style="font-size:17px;font-weight:800;color:#111827;">Log meals 10× faster</div>
+          <div style="font-size:12px;color:#9ca3af;margin-top:2px;">Multiple AI-powered methods</div>
+          <div class="features-grid">
+            <div class="feature-card">
+              <div class="feature-icon" style="background:#dcfce7;">📷</div>
+              <div class="feature-title">Photo AI</div>
+              <div class="feature-desc">Snap a photo. Claude identifies foods and estimates macros instantly.</div>
+            </div>
+            <div class="feature-card">
+              <div class="feature-icon" style="background:#dbeafe;">🎙️</div>
+              <div class="feature-title">Voice Log</div>
+              <div class="feature-desc">Say what you ate. AI parses it and logs automatically.</div>
+            </div>
+            <div class="feature-card">
+              <div class="feature-icon" style="background:#ede9fe;">📱</div>
+              <div class="feature-title">Barcode Scan</div>
+              <div class="feature-desc">Scan any packaged food for verified nutrition facts.</div>
+            </div>
+            <div class="feature-card">
+              <div class="feature-icon" style="background:#ffedd5;">🤖</div>
+              <div class="feature-title">AI Insights</div>
+              <div class="feature-desc">Personalized coaching based on your unique patterns.</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="stats-section">
+          <div style="font-size:14px;font-weight:700;color:#111827;text-align:center;margin-bottom:14px;">Trusted by thousands</div>
+          <div class="stats-row">
+            <div class="stat-hero"><div class="stat-hero-val">5s</div><div class="stat-hero-label">Avg log time</div></div>
+            <div class="stat-hero"><div class="stat-hero-val">6M+</div><div class="stat-hero-label">Foods in DB</div></div>
+            <div class="stat-hero"><div class="stat-hero-val">95%</div><div class="stat-hero-label">AI accuracy</div></div>
+          </div>
+        </div>
+
+        <div style="padding:20px 16px 20px;">
+          <div style="background:linear-gradient(135deg,#f0fdf4,#fdf4ff);border-radius:20px;padding:20px;text-align:center;">
+            <div style="font-size:24px;margin-bottom:8px;">🔒</div>
+            <div style="font-size:15px;font-weight:700;color:#111827;margin-bottom:4px;">Biometric Login</div>
+            <div style="font-size:12px;color:#9ca3af;line-height:1.5;">Face ID · Touch ID · Passkeys<br>Enterprise-grade security</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════════════════ DASHBOARD ═══════════════════ -->
+    <div id="screen-dashboard" class="screen active">
+      <div class="topbar">
+        <div class="logo"><div class="logo-icon">N</div><span class="logo-text">NutriTrack AI</span></div>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <div style="display:flex;align-items:center;gap:4px;background:#fff7ed;padding:5px 10px;border-radius:10px;">
+            <span style="font-size:12px;">⚡</span><span style="font-size:12px;font-weight:700;color:#ea580c;">7d</span>
+          </div>
+          <div class="avatar">A</div>
+        </div>
+      </div>
+      <div class="page">
+        <!-- Greeting -->
+        <div class="row">
+          <div>
+            <div style="font-size:12px;color:#9ca3af;">Friday, May 8</div>
+            <div style="font-size:20px;font-weight:800;color:#111827;">Hey, Alex 👋</div>
+          </div>
+        </div>
+
+        <!-- Calorie ring card -->
+        <div class="card" style="padding:0 18px 18px;">
+          <div class="ring-wrap">
+            <svg width="200" height="200" class="ring-svg" style="margin:-10px 0 -10px;">
+              <circle cx="100" cy="100" r="82" fill="none" stroke="#f3f4f6" stroke-width="14"/>
+              <circle cx="100" cy="100" r="82" fill="none" stroke="#22c55e" stroke-width="14"
+                stroke-linecap="round"
+                stroke-dasharray="515"
+                stroke-dashoffset="154"
+                transform="rotate(-90 100 100)"/>
+              <circle cx="100" cy="100" r="62" fill="none" stroke="#f0fdf4" stroke-width="1"/>
+            </svg>
+            <div style="margin-top:-92px;text-align:center;z-index:1;position:relative;">
+              <div class="ring-text-main">630</div>
+              <div class="ring-text-sub">kcal left</div>
+              <div class="ring-consumed" style="margin-top:4px;">1,420 / 2,050 kcal</div>
+            </div>
+            <div style="height:92px;"></div>
+          </div>
+          <!-- Nutrition score -->
+          <div style="display:flex;align-items:center;gap:12px;padding-top:4px;">
+            <svg width="60" height="60" style="flex-shrink:0;">
+              <circle cx="30" cy="30" r="24" fill="none" stroke="#f3f4f6" stroke-width="6"/>
+              <circle cx="30" cy="30" r="24" fill="none" stroke="#22c55e" stroke-width="6"
+                stroke-linecap="round"
+                stroke-dasharray="150.8"
+                stroke-dashoffset="32"
+                transform="rotate(-90 30 30)"/>
+              <text x="30" y="35" text-anchor="middle" font-size="13" font-weight="800" fill="#15803d">78</text>
+            </svg>
+            <div>
+              <div style="font-size:13px;font-weight:600;color:#374151;">Nutrition Score</div>
+              <div style="font-size:11px;color:#16a34a;font-weight:600;">Good — on track 🎯</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Macros -->
+        <div class="card">
+          <div class="section-title" style="margin-bottom:12px;">Today's Macros</div>
+          <div class="macro-row">
+            <!-- Protein -->
+            <div class="macro-item">
+              <div class="macro-label"><span>Protein</span><span>98/160g</span></div>
+              <div class="progress-track"><div class="progress-fill" style="width:61%;background:#3b82f6;"></div></div>
+              <div class="macro-val" style="color:#2563eb;background:#eff6ff;">98g</div>
+            </div>
+            <!-- Carbs -->
+            <div class="macro-item">
+              <div class="macro-label"><span>Carbs</span><span>165/210g</span></div>
+              <div class="progress-track"><div class="progress-fill" style="width:78%;background:#f59e0b;"></div></div>
+              <div class="macro-val" style="color:#d97706;background:#fffbeb;">165g</div>
+            </div>
+            <!-- Fat -->
+            <div class="macro-item">
+              <div class="macro-label"><span>Fat</span><span>42/70g</span></div>
+              <div class="progress-track"><div class="progress-fill" style="width:60%;background:#ef4444;"></div></div>
+              <div class="macro-val" style="color:#dc2626;background:#fef2f2;">42g</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Water -->
+        <div class="card">
+          <div class="row" style="margin-bottom:10px;">
+            <div style="display:flex;align-items:center;gap:6px;">
+              <span style="font-size:16px;">💧</span>
+              <span class="section-title">Hydration</span>
+            </div>
+            <span style="font-size:12px;color:#9ca3af;">1.8L / 2.5L</span>
+          </div>
+          <div class="water-cups">
+            <div class="cup filled"></div><div class="cup filled"></div><div class="cup filled"></div><div class="cup filled"></div>
+            <div class="cup filled"></div><div class="cup filled"></div><div class="cup filled"></div>
+            <div class="cup empty"></div><div class="cup empty"></div><div class="cup empty"></div>
+          </div>
+          <div style="height:6px;background:#f3f4f6;border-radius:3px;overflow:hidden;margin:8px 0;">
+            <div style="height:100%;width:72%;background:linear-gradient(90deg,#38bdf8,#0ea5e9);border-radius:3px;"></div>
+          </div>
+          <div class="water-btns">
+            <button class="water-btn">+ <span>150ml</span></button>
+            <button class="water-btn">+ <span>250ml</span></button>
+            <button class="water-btn">+ <span>330ml</span></button>
+            <button class="water-btn">+ <span>500ml</span></button>
+          </div>
+        </div>
+
+        <!-- AI Insights -->
+        <div>
+          <div class="section-title" style="margin-bottom:8px;">🤖 AI Insights</div>
+          <div class="insight-card" style="background:#f0fdf4;border-color:#bbf7d0;margin-bottom:8px;">
+            <span class="insight-icon">🎯</span>
+            <div>
+              <div class="insight-title" style="color:#15803d;">On track!</div>
+              <div class="insight-msg">Your calorie intake is spot on this week. Great consistency!</div>
+            </div>
+          </div>
+          <div class="insight-card" style="background:#eff6ff;border-color:#bfdbfe;">
+            <span class="insight-icon">💧</span>
+            <div>
+              <div class="insight-title" style="color:#1d4ed8;">Hydration reminder</div>
+              <div class="insight-msg">You drink less water on weekends than weekdays.</div>
+              <div class="insight-tip">→ Set a reminder every 2 hours to drink water.</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Meal timeline -->
+        <div class="card">
+          <div class="section-title" style="margin-bottom:12px;">Today's Meals</div>
+          <div class="meal-group">
+            <div class="meal-header">
+              <span style="font-size:13px;font-weight:600;color:#374151;">🍳 Breakfast</span>
+              <span class="text-muted">180 kcal</span>
+            </div>
+            <div class="meal-entry">
+              <div><div class="entry-name">Greek Yogurt with Berries</div><div class="entry-macro">1 cup • P15g • C25g • F3g</div></div>
+              <div class="entry-kcal">180</div>
+            </div>
+          </div>
+          <div class="meal-group">
+            <div class="meal-header">
+              <span style="font-size:13px;font-weight:600;color:#374151;">🍜 Lunch</span>
+              <span class="text-muted">520 kcal</span>
+            </div>
+            <div class="meal-entry">
+              <div><div class="entry-name">Chicken Caesar Salad</div><div class="entry-macro">1 large • P42g • C22g • F28g</div></div>
+              <div class="entry-kcal">520</div>
+            </div>
+          </div>
+          <div class="meal-group">
+            <div class="meal-header">
+              <span style="font-size:13px;font-weight:600;color:#374151;">🥐 Snack</span>
+              <span class="text-muted">200 kcal</span>
+            </div>
+            <div class="meal-entry">
+              <div><div class="entry-name">Quest Protein Bar</div><div class="entry-macro">1 bar • P21g • C22g • F7g • Quest</div></div>
+              <div class="entry-kcal">200</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Weight trend -->
+        <div class="card" style="margin-bottom:8px;">
+          <div class="row" style="margin-bottom:12px;">
+            <div class="section-title">Weight Trend</div>
+            <div style="display:flex;align-items:center;gap:4px;color:#16a34a;font-size:12px;font-weight:600;">↘ -2.0 kg</div>
+          </div>
+          <div style="font-size:26px;font-weight:800;color:#111827;margin-bottom:8px;">80.0 <span style="font-size:14px;color:#9ca3af;font-weight:400;">kg</span></div>
+          <svg viewBox="0 0 300 80" width="100%" height="80" style="overflow:visible;">
+            <defs>
+              <linearGradient id="wg" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stop-color="#22c55e" stop-opacity="0.2"/>
+                <stop offset="100%" stop-color="#22c55e" stop-opacity="0"/>
+              </linearGradient>
+            </defs>
+            <path d="M0,60 C20,58 40,55 60,52 C80,49 100,54 120,50 C140,46 160,44 180,42 C200,40 220,38 240,36 C260,34 280,32 300,30" fill="none" stroke="#22c55e" stroke-width="2.5" stroke-linecap="round"/>
+            <path d="M0,60 C20,58 40,55 60,52 C80,49 100,54 120,50 C140,46 160,44 180,42 C200,40 220,38 240,36 C260,34 280,32 300,30 L300,80 L0,80 Z" fill="url(#wg)"/>
+          </svg>
+        </div>
+      </div>
+      <!-- FAB -->
+      <div style="position:sticky;bottom:0;display:flex;justify-content:flex-end;padding:0 14px 8px;pointer-events:none;">
+        <div style="width:52px;height:52px;background:#16a34a;border-radius:50%;display:flex;align-items:center;justify-content:center;color:white;font-size:28px;box-shadow:0 4px 20px rgba(22,163,74,0.5);pointer-events:all;cursor:pointer;">+</div>
+      </div>
+    </div>
+
+    <!-- ═══════════════════ LOG FOOD ═══════════════════ -->
+    <div id="screen-log" class="screen">
+      <div class="topbar">
+        <div><div class="page-title">Log Food</div></div>
+        <div style="display:flex;align-items:center;gap:6px;background:white;border:1.5px solid #e5e7eb;padding:6px 12px;border-radius:12px;font-size:12px;font-weight:500;color:#374151;">
+          🥐 Snack <span style="color:#d1d5db;margin-left:2px;">▾</span>
+        </div>
+      </div>
+      <div class="page">
+        <!-- Methods -->
+        <div class="method-grid">
+          <div class="method-btn active" onclick="switchMethod('photo',this)">
+            <div class="method-icon" style="background:#dcfce7;">📷</div>
+            <div class="method-label" style="color:#15803d;">Photo AI</div>
+          </div>
+          <div class="method-btn" onclick="switchMethod('voice',this)">
+            <div class="method-icon" style="background:#dbeafe;">🎙️</div>
+            <div class="method-label">Voice</div>
+          </div>
+          <div class="method-btn" onclick="switchMethod('barcode',this)">
+            <div class="method-icon" style="background:#ede9fe;">📱</div>
+            <div class="method-label">Barcode</div>
+          </div>
+          <div class="method-btn" onclick="switchMethod('search',this)">
+            <div class="method-icon" style="background:#ffedd5;">🔍</div>
+            <div class="method-label">Search</div>
+          </div>
+        </div>
+
+        <!-- Photo logger (default) -->
+        <div id="logger-photo" class="card">
+          <div style="text-align:center;margin-bottom:14px;">
+            <div style="font-size:13px;font-weight:600;color:#374151;">AI Photo Recognition</div>
+            <div style="font-size:11px;color:#9ca3af;margin-top:2px;">Claude Sonnet analyzes your food</div>
+          </div>
+          <!-- Simulated result -->
+          <div style="position:relative;border-radius:14px;overflow:hidden;margin-bottom:12px;">
+            <div style="height:140px;background:linear-gradient(135deg,#fed7aa,#fbbf24);display:flex;align-items:center;justify-content:center;font-size:64px;">🥗</div>
+            <div style="position:absolute;inset:0;background:rgba(0,0,0,0.0);display:flex;align-items:flex-end;padding:10px;">
+              <div style="background:rgba(0,0,0,0.6);color:white;padding:4px 10px;border-radius:8px;font-size:10px;font-weight:600;display:flex;align-items:center;gap:4px;">🤖 AI Analysis Complete</div>
+            </div>
+          </div>
+          <div style="font-size:12px;font-weight:600;color:#374151;margin-bottom:8px;">Detected foods:</div>
+          <div class="ai-result">
+            <div class="ai-food-row">
+              <div>
+                <div style="font-size:13px;font-weight:700;color:#1f2937;">Grilled Chicken Caesar Salad</div>
+                <div style="font-size:11px;color:#9ca3af;margin-top:2px;">~1 large serving (400g)</div>
+              </div>
+              <div style="text-align:right;">
+                <div style="font-size:14px;font-weight:800;color:#1f2937;">480 kcal</div>
+                <div style="font-size:10px;color:#9ca3af;">P38 C18 F28</div>
+              </div>
+            </div>
+            <div class="confidence-bar"><div class="confidence-fill" style="width:91%;"></div></div>
+            <div style="font-size:10px;color:#9ca3af;margin-top:4px;">91% confident</div>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px;">
+            <button style="padding:11px;border:1.5px solid #e5e7eb;background:white;border-radius:12px;font-size:12px;font-weight:600;color:#374151;cursor:pointer;">↩ Retake</button>
+            <button style="padding:11px;background:#16a34a;color:white;border:none;border-radius:12px;font-size:12px;font-weight:700;cursor:pointer;">✓ Log Food</button>
+          </div>
+        </div>
+
+        <!-- Voice logger (hidden) -->
+        <div id="logger-voice" class="card" style="display:none;">
+          <div style="text-align:center;padding:10px 0;">
+            <div class="mic-btn">🎙️</div>
+            <div style="font-size:13px;color:#9ca3af;">Tap mic and say what you ate</div>
+            <div class="wave-bars" style="margin-top:12px;">
+              <div class="wave-bar" style="height:8px;"></div>
+              <div class="wave-bar" style="height:8px;"></div>
+              <div class="wave-bar" style="height:8px;"></div>
+              <div class="wave-bar" style="height:8px;"></div>
+              <div class="wave-bar" style="height:8px;"></div>
+            </div>
+          </div>
+          <div style="background:#f9fafb;border-radius:12px;padding:12px;margin-top:4px;">
+            <div style="font-size:10px;color:#9ca3af;margin-bottom:6px;font-weight:500;">Try saying:</div>
+            <div style="font-size:11px;color:#6b7280;font-style:italic;margin-bottom:4px;">"I had 2 scrambled eggs and toast"</div>
+            <div style="font-size:11px;color:#6b7280;font-style:italic;margin-bottom:4px;">"Large chicken salad with dressing"</div>
+            <div style="font-size:11px;color:#6b7280;font-style:italic;">"Protein shake and a banana"</div>
+          </div>
+        </div>
+
+        <!-- Barcode logger (hidden) -->
+        <div id="logger-barcode" class="card" style="display:none;">
+          <div style="background:#f9fafb;border:2px dashed #d1d5db;border-radius:14px;padding:28px;text-align:center;margin-bottom:14px;">
+            <div style="font-size:40px;margin-bottom:8px;">📷</div>
+            <div style="font-size:13px;font-weight:600;color:#9ca3af;">Camera scanning</div>
+            <div style="font-size:11px;color:#d1d5db;">coming soon</div>
+          </div>
+          <div style="display:flex;gap:8px;">
+            <div style="flex:1;border:1.5px solid #e5e7eb;border-radius:12px;padding:10px 12px;display:flex;align-items:center;gap:8px;">
+              <span style="color:#9ca3af;font-size:14px;">🔍</span>
+              <span style="font-size:12px;color:#d1d5db;">Enter barcode number...</span>
+            </div>
+            <button style="background:#16a34a;color:white;border:none;padding:10px 14px;border-radius:12px;font-size:12px;font-weight:600;cursor:pointer;">Look up</button>
+          </div>
+          <!-- Sample result -->
+          <div style="margin-top:12px;background:#f0fdf4;border:1.5px solid #86efac;border-radius:14px;padding:14px;">
+            <div style="font-size:14px;font-weight:700;color:#1f2937;">Quest Protein Bar</div>
+            <div style="font-size:11px;color:#9ca3af;margin-top:2px;">Quest Nutrition • Per bar (60g)</div>
+            <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:10px;text-align:center;">
+              <div><div style="font-size:16px;font-weight:800;color:#1f2937;">200</div><div style="font-size:10px;color:#9ca3af;">kcal</div></div>
+              <div><div style="font-size:16px;font-weight:800;color:#2563eb;">21g</div><div style="font-size:10px;color:#9ca3af;">Protein</div></div>
+              <div><div style="font-size:16px;font-weight:800;color:#d97706;">22g</div><div style="font-size:10px;color:#9ca3af;">Carbs</div></div>
+              <div><div style="font-size:16px;font-weight:800;color:#dc2626;">7g</div><div style="font-size:10px;color:#9ca3af;">Fat</div></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Search logger (hidden) -->
+        <div id="logger-search" class="card" style="display:none;">
+          <div style="border:1.5px solid #e5e7eb;border-radius:12px;padding:10px 12px;display:flex;align-items:center;gap:8px;margin-bottom:12px;">
+            <span style="color:#9ca3af;">🔍</span>
+            <span style="font-size:12px;color:#9ca3af;">Search USDA database...</span>
+          </div>
+          <!-- Results -->
+          <div style="font-size:11px;font-weight:600;color:#9ca3af;margin-bottom:8px;">Results for "chicken breast"</div>
+          <div style="display:flex;flex-direction:column;gap:6px;">
+            <div style="display:flex;justify-content:space-between;align-items:center;padding:10px;background:#f9fafb;border-radius:12px;border:1.5px solid #f3f4f6;">
+              <div><div style="font-size:12px;font-weight:600;color:#1f2937;">Chicken Breast, roasted</div><div style="font-size:10px;color:#9ca3af;">165 kcal • P31g • C0g • F4g • per 100g</div></div>
+              <button style="width:30px;height:30px;background:#16a34a;color:white;border:none;border-radius:8px;font-size:16px;cursor:pointer;">+</button>
+            </div>
+            <div style="display:flex;justify-content:space-between;align-items:center;padding:10px;background:#f9fafb;border-radius:12px;border:1.5px solid #f3f4f6;">
+              <div><div style="font-size:12px;font-weight:600;color:#1f2937;">Chicken Breast, grilled</div><div style="font-size:10px;color:#9ca3af;">153 kcal • P30g • C0g • F3g • per 100g</div></div>
+              <button style="width:30px;height:30px;background:#16a34a;color:white;border:none;border-radius:8px;font-size:16px;cursor:pointer;">+</button>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ═══════════════════ ANALYTICS ═══════════════════ -->
+    <div id="screen-analytics" class="screen">
+      <div class="topbar">
+        <div class="page-title">Analytics</div>
+        <div style="display:flex;background:white;border:1.5px solid #e5e7eb;border-radius:12px;padding:3px;gap:2px;">
+          <button style="padding:5px 10px;background:#16a34a;color:white;border:none;border-radius:9px;font-size:11px;font-weight:600;cursor:pointer;">7 days</button>
+          <button style="padding:5px 10px;background:transparent;color:#9ca3af;border:none;font-size:11px;font-weight:600;cursor:pointer;">30 days</button>
+        </div>
+      </div>
+      <div class="page">
+        <!-- Stat cards -->
+        <div class="stat-grid">
+          <div class="stat-card">
+            <div class="stat-icon" style="background:#f0fdf4;">📊</div>
+            <div class="stat-label">Avg Calories</div>
+            <div class="stat-val">1,842 <span class="stat-unit">kcal</span></div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon" style="background:#eff6ff;">💪</div>
+            <div class="stat-label">Avg Protein</div>
+            <div class="stat-val">112 <span class="stat-unit">g</span></div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon" style="background:#ecfeff;">💧</div>
+            <div class="stat-label">Avg Water</div>
+            <div class="stat-val">1.9 <span class="stat-unit">L</span></div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon" style="background:#fdf4ff;">📅</div>
+            <div class="stat-label">Days Logged</div>
+            <div class="stat-val">6 <span class="stat-unit">/ 7</span></div>
+          </div>
+        </div>
+
+        <!-- Chart tabs -->
+        <div class="card">
+          <div style="display:flex;gap:6px;margin-bottom:14px;">
+            <button style="padding:6px 12px;background:#16a34a;color:white;border:none;border-radius:10px;font-size:11px;font-weight:600;cursor:pointer;">Calories</button>
+            <button style="padding:6px 12px;background:#f3f4f6;color:#9ca3af;border:none;border-radius:10px;font-size:11px;font-weight:600;cursor:pointer;">Protein</button>
+            <button style="padding:6px 12px;background:#f3f4f6;color:#9ca3af;border:none;border-radius:10px;font-size:11px;font-weight:600;cursor:pointer;">Water</button>
+          </div>
+          <!-- Bar chart -->
+          <div class="chart-placeholder">
+            <div class="bar" style="height:85%;background:linear-gradient(to top,#16a34a,#4ade80);"></div>
+            <div class="bar" style="height:70%;background:linear-gradient(to top,#16a34a,#4ade80);"></div>
+            <div class="bar" style="height:95%;background:linear-gradient(to top,#16a34a,#4ade80);"></div>
+            <div class="bar" style="height:60%;background:linear-gradient(to top,#16a34a,#4ade80);"></div>
+            <div class="bar" style="height:88%;background:linear-gradient(to top,#16a34a,#4ade80);"></div>
+            <div class="bar" style="height:75%;background:linear-gradient(to top,#16a34a,#4ade80);"></div>
+            <div class="bar" style="height:45%;background:linear-gradient(to top,#d1d5db,#e5e7eb);"></div>
+          </div>
+          <div style="display:flex;justify-content:space-around;margin-top:6px;">
+            <span style="font-size:10px;color:#d1d5db;">M</span><span style="font-size:10px;color:#d1d5db;">T</span><span style="font-size:10px;color:#d1d5db;">W</span><span style="font-size:10px;color:#d1d5db;">T</span><span style="font-size:10px;color:#d1d5db;">F</span><span style="font-size:10px;color:#d1d5db;">S</span><span style="font-size:10px;color:#9ca3af;font-weight:600;">S</span>
+          </div>
+          <!-- Reference line annotation -->
+          <div style="display:flex;align-items:center;gap:6px;margin-top:10px;">
+            <div style="width:24px;height:2px;background:#16a34a;opacity:0.5;border-style:dashed;border-width:1px 0 0 0;"></div>
+            <span style="font-size:10px;color:#9ca3af;">Goal: 2,050 kcal</span>
+          </div>
+        </div>
+
+        <!-- Goal hit rates -->
+        <div class="card">
+          <div class="section-title" style="margin-bottom:12px;">Goal Achievement</div>
+          <div style="display:flex;flex-direction:column;gap:10px;">
+            <div>
+              <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:5px;"><span style="color:#6b7280;">Calorie Goal</span><span style="font-weight:600;color:#1f2937;">5/6 days</span></div>
+              <div style="height:8px;background:#f3f4f6;border-radius:4px;overflow:hidden;"><div style="height:100%;width:83%;background:#22c55e;border-radius:4px;"></div></div>
+            </div>
+            <div>
+              <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:5px;"><span style="color:#6b7280;">Protein Goal</span><span style="font-weight:600;color:#1f2937;">4/6 days</span></div>
+              <div style="height:8px;background:#f3f4f6;border-radius:4px;overflow:hidden;"><div style="height:100%;width:67%;background:#3b82f6;border-radius:4px;"></div></div>
+            </div>
+            <div>
+              <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:5px;"><span style="color:#6b7280;">Water Goal</span><span style="font-weight:600;color:#1f2937;">3/6 days</span></div>
+              <div style="height:8px;background:#f3f4f6;border-radius:4px;overflow:hidden;"><div style="height:100%;width:50%;background:#06b6d4;border-radius:4px;"></div></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Macro pie -->
+        <div class="card">
+          <div class="section-title" style="margin-bottom:12px;">Avg Macro Breakdown</div>
+          <div style="display:flex;align-items:center;gap:16px;">
+            <svg width="110" height="110" viewBox="0 0 110 110">
+              <circle cx="55" cy="55" r="40" fill="none" stroke="#f3f4f6" stroke-width="20"/>
+              <!-- Protein 32% = 201.1deg -->
+              <circle cx="55" cy="55" r="40" fill="none" stroke="#3b82f6" stroke-width="20"
+                stroke-dasharray="80.4 170.6" stroke-dashoffset="0"
+                transform="rotate(-90 55 55)"/>
+              <!-- Carbs 43% = 270.7deg -->
+              <circle cx="55" cy="55" r="40" fill="none" stroke="#f59e0b" stroke-width="20"
+                stroke-dasharray="107.9 143.1" stroke-dashoffset="-80.4"
+                transform="rotate(-90 55 55)"/>
+              <!-- Fat 25% = 157.1deg -->
+              <circle cx="55" cy="55" r="40" fill="none" stroke="#ef4444" stroke-width="20"
+                stroke-dasharray="62.8 188.2" stroke-dashoffset="-188.3"
+                transform="rotate(-90 55 55)"/>
+            </svg>
+            <div style="flex:1;display:flex;flex-direction:column;gap:8px;">
+              <div style="display:flex;justify-content:space-between;align-items:center;">
+                <div style="display:flex;align-items:center;gap:6px;"><div style="width:10px;height:10px;border-radius:50%;background:#3b82f6;"></div><span style="font-size:12px;color:#6b7280;">Protein</span></div>
+                <div><span style="font-size:13px;font-weight:700;color:#111827;">32%</span><span style="font-size:11px;color:#9ca3af;margin-left:4px;">112g</span></div>
+              </div>
+              <div style="display:flex;justify-content:space-between;align-items:center;">
+                <div style="display:flex;align-items:center;gap:6px;"><div style="width:10px;height:10px;border-radius:50%;background:#f59e0b;"></div><span style="font-size:12px;color:#6b7280;">Carbs</span></div>
+                <div><span style="font-size:13px;font-weight:700;color:#111827;">43%</span><span style="font-size:11px;color:#9ca3af;margin-left:4px;">190g</span></div>
+              </div>
+              <div style="display:flex;justify-content:space-between;align-items:center;">
+                <div style="display:flex;align-items:center;gap:6px;"><div style="width:10px;height:10px;border-radius:50%;background:#ef4444;"></div><span style="font-size:12px;color:#6b7280;">Fat</span></div>
+                <div><span style="font-size:13px;font-weight:700;color:#111827;">25%</span><span style="font-size:11px;color:#9ca3af;margin-left:4px;">52g</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- AI summary -->
+        <div style="background:linear-gradient(135deg,#f0fdf4,#fdf4ff);border:1.5px solid #bbf7d0;border-radius:18px;padding:16px;margin-bottom:8px;">
+          <div style="font-size:11px;font-weight:700;color:#15803d;margin-bottom:6px;">🤖 AI Weekly Summary</div>
+          <div style="font-size:12px;color:#374151;line-height:1.6;">Great week Alex! You stayed within your calorie goal 5 out of 6 days. Protein could use a boost — try adding an extra 30g on low days. You're trending 0.2kg below your previous week. Keep it up! 🎉</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════════════════ RECIPES ═══════════════════ -->
+    <div id="screen-recipes" class="screen">
+      <div class="topbar">
+        <div><div class="page-title">Recipes</div><div class="page-subtitle">AI-curated for your goals</div></div>
+      </div>
+      <div class="page">
+        <!-- Search -->
+        <div style="border:1.5px solid #e5e7eb;border-radius:14px;padding:10px 14px;display:flex;align-items:center;gap:8px;background:white;">
+          <span style="color:#9ca3af;">🔍</span>
+          <span style="font-size:12px;color:#d1d5db;">Search recipes...</span>
+        </div>
+        <!-- Filter chips -->
+        <div style="display:flex;gap:6px;overflow-x:auto;padding-bottom:2px;">
+          <div style="flex-shrink:0;padding:6px 12px;background:#16a34a;color:white;border-radius:20px;font-size:11px;font-weight:600;">All</div>
+          <div style="flex-shrink:0;padding:6px 12px;background:white;border:1.5px solid #e5e7eb;color:#6b7280;border-radius:20px;font-size:11px;font-weight:600;">High Protein</div>
+          <div style="flex-shrink:0;padding:6px 12px;background:white;border:1.5px solid #e5e7eb;color:#6b7280;border-radius:20px;font-size:11px;font-weight:600;">Keto</div>
+          <div style="flex-shrink:0;padding:6px 12px;background:white;border:1.5px solid #e5e7eb;color:#6b7280;border-radius:20px;font-size:11px;font-weight:600;">Vegan</div>
+          <div style="flex-shrink:0;padding:6px 12px;background:white;border:1.5px solid #e5e7eb;color:#6b7280;border-radius:20px;font-size:11px;font-weight:600;">Gluten-Free</div>
+        </div>
+        <!-- Recipe grid -->
+        <div class="recipe-grid">
+          <!-- Card 1 -->
+          <div class="recipe-card">
+            <div class="recipe-img-bg" style="background:linear-gradient(135deg,#d1fae5,#fde68a);">🥗</div>
+            <div style="position:relative;">
+              <span style="position:absolute;top:-108px;right:6px;width:26px;height:26px;background:rgba(255,255,255,0.9);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;">❤️</span>
+              <span style="position:absolute;top:-108px;left:6px;background:#dcfce7;color:#15803d;font-size:9px;font-weight:700;padding:2px 7px;border-radius:10px;">✓ Verified</span>
+            </div>
+            <div class="recipe-body">
+              <div class="recipe-title">High-Protein Greek Bowl</div>
+              <div class="recipe-meta"><span>🔥 520 kcal</span><span>⏱ 40 min</span></div>
+              <div class="recipe-macros">
+                <div class="recipe-macro" style="background:#eff6ff;"><div class="recipe-macro-val" style="color:#2563eb;">45g</div><div class="recipe-macro-label">P</div></div>
+                <div class="recipe-macro" style="background:#fffbeb;"><div class="recipe-macro-val" style="color:#d97706;">48g</div><div class="recipe-macro-label">C</div></div>
+                <div class="recipe-macro" style="background:#fef2f2;"><div class="recipe-macro-val" style="color:#dc2626;">14g</div><div class="recipe-macro-label">F</div></div>
+              </div>
+            </div>
+          </div>
+          <!-- Card 2 -->
+          <div class="recipe-card">
+            <div class="recipe-img-bg" style="background:linear-gradient(135deg,#fef9c3,#fed7aa);">🥑</div>
+            <div class="recipe-body">
+              <div class="recipe-title">Keto Avocado Egg Bake</div>
+              <div class="recipe-meta"><span>🔥 380 kcal</span><span>⏱ 20 min</span></div>
+              <div class="recipe-macros">
+                <div class="recipe-macro" style="background:#eff6ff;"><div class="recipe-macro-val" style="color:#2563eb;">18g</div><div class="recipe-macro-label">P</div></div>
+                <div class="recipe-macro" style="background:#fffbeb;"><div class="recipe-macro-val" style="color:#d97706;">8g</div><div class="recipe-macro-label">C</div></div>
+                <div class="recipe-macro" style="background:#fef2f2;"><div class="recipe-macro-val" style="color:#dc2626;">32g</div><div class="recipe-macro-label">F</div></div>
+              </div>
+            </div>
+          </div>
+          <!-- Card 3 -->
+          <div class="recipe-card">
+            <div class="recipe-img-bg" style="background:linear-gradient(135deg,#fde68a,#fb923c);">🥣</div>
+            <div class="recipe-body">
+              <div class="recipe-title">Overnight Oats with Berries</div>
+              <div class="recipe-meta"><span>🔥 340 kcal</span><span>⏱ 5 min</span></div>
+              <div class="recipe-macros">
+                <div class="recipe-macro" style="background:#eff6ff;"><div class="recipe-macro-val" style="color:#2563eb;">14g</div><div class="recipe-macro-label">P</div></div>
+                <div class="recipe-macro" style="background:#fffbeb;"><div class="recipe-macro-val" style="color:#d97706;">58g</div><div class="recipe-macro-label">C</div></div>
+                <div class="recipe-macro" style="background:#fef2f2;"><div class="recipe-macro-val" style="color:#dc2626;">8g</div><div class="recipe-macro-label">F</div></div>
+              </div>
+            </div>
+          </div>
+          <!-- Card 4 -->
+          <div class="recipe-card">
+            <div class="recipe-img-bg" style="background:linear-gradient(135deg,#d1fae5,#a7f3d0);">🐟</div>
+            <div class="recipe-body">
+              <div class="recipe-title">Salmon & Roasted Vegetables</div>
+              <div class="recipe-meta"><span>🔥 480 kcal</span><span>⏱ 40 min</span></div>
+              <div class="recipe-macros">
+                <div class="recipe-macro" style="background:#eff6ff;"><div class="recipe-macro-val" style="color:#2563eb;">42g</div><div class="recipe-macro-label">P</div></div>
+                <div class="recipe-macro" style="background:#fffbeb;"><div class="recipe-macro-val" style="color:#d97706;">28g</div><div class="recipe-macro-label">C</div></div>
+                <div class="recipe-macro" style="background:#fef2f2;"><div class="recipe-macro-val" style="color:#dc2626;">22g</div><div class="recipe-macro-label">F</div></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════════════════ PROFILE ═══════════════════ -->
+    <div id="screen-profile" class="screen">
+      <div class="topbar">
+        <div class="page-title">Profile</div>
+      </div>
+      <div class="page">
+        <div class="profile-header">
+          <div class="profile-avatar">A</div>
+          <div>
+            <div style="font-size:17px;font-weight:800;color:#111827;">Alex Demo</div>
+            <div style="font-size:12px;color:#9ca3af;margin-top:2px;">demo@nutritrack.ai</div>
+            <div style="display:flex;gap:6px;margin-top:8px;">
+              <span class="badge badge-green">Lose Weight</span>
+              <span class="badge badge-blue">7-day streak 🔥</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Streak stats -->
+        <div class="metric-grid">
+          <div class="metric-card">
+            <div style="font-size:22px;margin-bottom:4px;">⚡</div>
+            <div class="metric-val">7</div>
+            <div class="metric-label">Day streak</div>
+          </div>
+          <div class="metric-card">
+            <div style="font-size:22px;margin-bottom:4px;">🏆</div>
+            <div class="metric-val">320</div>
+            <div class="metric-label">Points</div>
+          </div>
+          <div class="metric-card">
+            <div style="font-size:22px;margin-bottom:4px;">📅</div>
+            <div class="metric-val">32</div>
+            <div class="metric-label">Days logged</div>
+          </div>
+        </div>
+
+        <!-- Body metrics -->
+        <div class="card">
+          <div class="section-title" style="margin-bottom:12px;">Body Metrics</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+            <div><div style="font-size:11px;color:#9ca3af;">Height</div><div style="font-size:14px;font-weight:600;color:#1f2937;margin-top:2px;">178 cm</div></div>
+            <div><div style="font-size:11px;color:#9ca3af;">Current Weight</div><div style="font-size:14px;font-weight:600;color:#1f2937;margin-top:2px;">80.0 kg</div></div>
+            <div><div style="font-size:11px;color:#9ca3af;">Target Weight</div><div style="font-size:14px;font-weight:600;color:#1f2937;margin-top:2px;">75.0 kg</div></div>
+            <div><div style="font-size:11px;color:#9ca3af;">BMI</div><div style="font-size:14px;font-weight:600;color:#1f2937;margin-top:2px;">25.2 (Overweight)</div></div>
+            <div><div style="font-size:11px;color:#9ca3af;">BMR</div><div style="font-size:14px;font-weight:600;color:#1f2937;margin-top:2px;">1,850 kcal</div></div>
+            <div><div style="font-size:11px;color:#9ca3af;">TDEE</div><div style="font-size:14px;font-weight:600;color:#1f2937;margin-top:2px;">2,450 kcal</div></div>
+          </div>
+        </div>
+
+        <!-- Goals -->
+        <div class="card">
+          <div class="section-title" style="margin-bottom:12px;">Daily Goals</div>
+          <div style="display:flex;flex-direction:column;gap:10px;">
+            <div style="display:flex;justify-content:space-between;align-items:center;"><div style="display:flex;align-items:center;gap:6px;"><span>🔥</span><span style="font-size:13px;color:#374151;">Calories</span></div><span style="font-size:13px;font-weight:700;color:#111827;">2,050 kcal</span></div>
+            <div style="display:flex;justify-content:space-between;align-items:center;"><div style="display:flex;align-items:center;gap:6px;"><span>💪</span><span style="font-size:13px;color:#374151;">Protein</span></div><span style="font-size:13px;font-weight:700;color:#111827;">160 g</span></div>
+            <div style="display:flex;justify-content:space-between;align-items:center;"><div style="display:flex;align-items:center;gap:6px;"><span>💧</span><span style="font-size:13px;color:#374151;">Water</span></div><span style="font-size:13px;font-weight:700;color:#111827;">2.5 L</span></div>
+          </div>
+        </div>
+
+        <!-- Log weight -->
+        <div class="card">
+          <div class="section-title" style="margin-bottom:10px;">Log Today's Weight</div>
+          <div style="display:flex;gap:8px;">
+            <div style="flex:1;border:1.5px solid #e5e7eb;border-radius:12px;padding:10px 12px;display:flex;align-items:center;justify-content:space-between;">
+              <span style="font-size:13px;color:#d1d5db;">e.g. 79.5</span>
+              <span style="font-size:11px;color:#9ca3af;">kg</span>
+            </div>
+            <button style="background:#16a34a;color:white;border:none;padding:10px 16px;border-radius:12px;font-size:13px;font-weight:600;cursor:pointer;">Log</button>
+          </div>
+        </div>
+
+        <!-- Passkey -->
+        <div class="card" style="margin-bottom:8px;">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+            <span style="font-size:20px;">🔐</span>
+            <span class="section-title">Passkey / Biometric Login</span>
+          </div>
+          <div style="font-size:11px;color:#9ca3af;line-height:1.5;margin-bottom:10px;">Register a passkey to sign in with Face ID, Touch ID, or Windows Hello.</div>
+          <button style="width:100%;padding:11px;border:1.5px solid #e5e7eb;background:white;border-radius:12px;font-size:12px;font-weight:600;color:#374151;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;font-family:inherit;">
+            🔐 Register Passkey
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════════════════ ONBOARDING ═══════════════════ -->
+    <div id="screen-onboarding" class="screen">
+      <div style="background:linear-gradient(160deg,#f0fdf4,#fdf4ff);min-height:100%;padding:20px 16px;">
+        <div class="progress-steps">
+          <div class="step-bar done"></div>
+          <div class="step-bar done"></div>
+          <div class="step-bar done"></div>
+          <div class="step-bar"></div>
+        </div>
+        <div style="font-size:22px;font-weight:800;color:#111827;margin-bottom:4px;">What's your goal?</div>
+        <div style="font-size:13px;color:#9ca3af;margin-bottom:24px;">We'll tailor your plan accordingly</div>
+
+        <!-- Activity level -->
+        <div style="margin-bottom:20px;">
+          <div style="font-size:12px;font-weight:600;color:#374151;margin-bottom:8px;">Activity Level</div>
+          <div class="choice-btn selected"><span class="choice-btn-label">Moderately Active</span><span class="choice-btn-desc">3-5 workouts/week</span></div>
+          <div class="choice-btn"><span class="choice-btn-label">Lightly Active</span><span class="choice-btn-desc">1-3 workouts/week</span></div>
+          <div class="choice-btn"><span class="choice-btn-label">Very Active</span><span class="choice-btn-desc">6-7 workouts/week</span></div>
+        </div>
+
+        <!-- Goal -->
+        <div style="margin-bottom:24px;">
+          <div style="font-size:12px;font-weight:600;color:#374151;margin-bottom:8px;">Your Goal</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+            <button style="padding:14px;border:2px solid #4ade80;background:#f0fdf4;border-radius:14px;font-size:13px;font-weight:600;color:#15803d;cursor:pointer;font-family:inherit;">🔥 Lose Weight</button>
+            <button style="padding:14px;border:2px solid #e5e7eb;background:white;border-radius:14px;font-size:13px;font-weight:500;color:#6b7280;cursor:pointer;font-family:inherit;">⚖️ Maintain</button>
+            <button style="padding:14px;border:2px solid #e5e7eb;background:white;border-radius:14px;font-size:13px;font-weight:500;color:#6b7280;cursor:pointer;font-family:inherit;">💪 Gain Muscle</button>
+            <button style="padding:14px;border:2px solid #e5e7eb;background:white;border-radius:14px;font-size:13px;font-weight:500;color:#6b7280;cursor:pointer;font-family:inherit;">❤️ Health</button>
+          </div>
+        </div>
+
+        <!-- Calculated preview -->
+        <div style="background:white;border-radius:20px;padding:16px;box-shadow:0 4px 20px rgba(0,0,0,0.06);margin-bottom:20px;">
+          <div style="font-size:12px;font-weight:600;color:#374151;margin-bottom:12px;">📊 Your personalized targets</div>
+          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;text-align:center;">
+            <div><div style="font-size:18px;font-weight:800;color:#16a34a;">2,050</div><div style="font-size:10px;color:#9ca3af;">kcal/day</div></div>
+            <div><div style="font-size:18px;font-weight:800;color:#2563eb;">160g</div><div style="font-size:10px;color:#9ca3af;">protein</div></div>
+            <div><div style="font-size:18px;font-weight:800;color:#0891b2;">2.5L</div><div style="font-size:10px;color:#9ca3af;">water</div></div>
+          </div>
+          <div style="background:#f0fdf4;border-radius:12px;padding:10px 12px;margin-top:12px;display:flex;align-items:center;gap:8px;">
+            <span>📅</span>
+            <span style="font-size:12px;color:#374151;"><strong>~18 weeks</strong> to reach your goal weight</span>
+          </div>
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+          <button style="padding:13px;border:1.5px solid #e5e7eb;background:white;border-radius:14px;font-size:13px;font-weight:600;color:#374151;cursor:pointer;font-family:inherit;">← Back</button>
+          <button style="padding:13px;background:#16a34a;color:white;border:none;border-radius:14px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;box-shadow:0 0 20px rgba(22,163,74,0.3);">Complete Setup 🎉</button>
+        </div>
+        <div style="text-align:center;font-size:11px;color:#d1d5db;margin-top:12px;">Step 3 of 4</div>
+      </div>
+    </div>
+
+    <!-- ═══════════════════ ACHIEVEMENTS ═══════════════════ -->
+    <div id="screen-achievements" class="screen">
+      <div class="topbar">
+        <div class="page-title">Achievements</div>
+      </div>
+      <div class="page">
+        <!-- Trophy banner -->
+        <div style="background:linear-gradient(135deg,#fffbeb,#fff7ed);border:1.5px solid #fde68a;border-radius:20px;padding:16px;display:flex;align-items:center;gap:14px;">
+          <div style="width:56px;height:56px;background:#fef3c7;border-radius:18px;display:flex;align-items:center;justify-content:center;font-size:28px;">🏆</div>
+          <div>
+            <div style="font-size:24px;font-weight:900;color:#111827;">320 pts</div>
+            <div style="font-size:12px;color:#9ca3af;margin-top:2px;">4 / 12 unlocked</div>
+          </div>
+        </div>
+
+        <!-- Filter -->
+        <div style="display:flex;gap:6px;">
+          <button style="padding:6px 14px;background:#16a34a;color:white;border:none;border-radius:10px;font-size:11px;font-weight:600;cursor:pointer;">All</button>
+          <button style="padding:6px 14px;background:#f3f4f6;color:#9ca3af;border:none;border-radius:10px;font-size:11px;font-weight:600;cursor:pointer;">Unlocked</button>
+          <button style="padding:6px 14px;background:#f3f4f6;color:#9ca3af;border:none;border-radius:10px;font-size:11px;font-weight:600;cursor:pointer;">Locked</button>
+        </div>
+
+        <!-- Achievements list -->
+        <div class="ach-card" style="border:1.5px solid #fde68a;">
+          <div class="ach-icon" style="background:#fef9c3;">🍽️</div>
+          <div>
+            <div class="ach-name">First Log</div>
+            <div class="ach-desc">Logged your first meal</div>
+            <div style="margin-top:4px;"><span style="background:#dcfce7;color:#15803d;font-size:10px;font-weight:700;padding:2px 7px;border-radius:10px;">✓ Unlocked</span></div>
+          </div>
+          <div style="margin-left:auto;text-align:center;"><div class="ach-pts">+10</div><div class="ach-pts-label">pts</div></div>
+        </div>
+        <div class="ach-card" style="border:1.5px solid #fde68a;">
+          <div class="ach-icon" style="background:#fff7ed;">🔥</div>
+          <div>
+            <div class="ach-name">Week Warrior</div>
+            <div class="ach-desc">7-day logging streak</div>
+            <div style="margin-top:4px;"><span style="background:#dcfce7;color:#15803d;font-size:10px;font-weight:700;padding:2px 7px;border-radius:10px;">✓ Unlocked</span></div>
+          </div>
+          <div style="margin-left:auto;text-align:center;"><div class="ach-pts">+50</div><div class="ach-pts-label">pts</div></div>
+        </div>
+        <div class="ach-card locked">
+          <div class="ach-icon" style="background:#f3f4f6;">💪</div>
+          <div>
+            <div class="ach-name">Month Master</div>
+            <div class="ach-desc">30-day logging streak</div>
+          </div>
+          <div style="margin-left:auto;text-align:center;"><div class="ach-pts" style="color:#9ca3af;">+200</div><div class="ach-pts-label">pts</div></div>
+        </div>
+        <div class="ach-card" style="border:1.5px solid #fde68a;">
+          <div class="ach-icon" style="background:#eff6ff;">🤖</div>
+          <div>
+            <div class="ach-name">AI Explorer</div>
+            <div class="ach-desc">Logged with AI photo recognition</div>
+            <div style="margin-top:4px;"><span style="background:#dcfce7;color:#15803d;font-size:10px;font-weight:700;padding:2px 7px;border-radius:10px;">✓ Unlocked</span></div>
+          </div>
+          <div style="margin-left:auto;text-align:center;"><div class="ach-pts">+20</div><div class="ach-pts-label">pts</div></div>
+        </div>
+        <div class="ach-card locked">
+          <div class="ach-icon" style="background:#f3f4f6;">🎯</div>
+          <div>
+            <div class="ach-name">Calorie Champion</div>
+            <div class="ach-desc">Hit calorie goal 7 days in a row</div>
+          </div>
+          <div style="margin-left:auto;text-align:center;"><div class="ach-pts" style="color:#9ca3af;">+50</div><div class="ach-pts-label">pts</div></div>
+        </div>
+        <div class="ach-card locked" style="margin-bottom:16px;">
+          <div class="ach-icon" style="background:#f3f4f6;">🏆</div>
+          <div>
+            <div class="ach-name">Goal Getter</div>
+            <div class="ach-desc">Reach your target weight</div>
+          </div>
+          <div style="margin-left:auto;text-align:center;"><div class="ach-pts" style="color:#9ca3af;">+500</div><div class="ach-pts-label">pts</div></div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /screen-wrap -->
+
+  <!-- Bottom Nav -->
+  <div class="bottom-nav" id="bottom-nav">
+    <div class="nav-item active" id="nav-dashboard" onclick="show('dashboard')">
+      <svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+      <span class="nav-label">Home</span>
+    </div>
+    <div class="nav-item" id="nav-log" onclick="show('log')">
+      <svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
+      <span class="nav-label">Log</span>
+    </div>
+    <div class="nav-item" id="nav-analytics" onclick="show('analytics')">
+      <svg viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+      <span class="nav-label">Stats</span>
+    </div>
+    <div class="nav-item" id="nav-recipes" onclick="show('recipes')">
+      <svg viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/></svg>
+      <span class="nav-label">Recipes</span>
+    </div>
+    <div class="nav-item" id="nav-profile" onclick="show('profile')">
+      <svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+      <span class="nav-label">Profile</span>
+    </div>
+  </div>
+
+</div><!-- /device -->
+
+<div class="scroll-hint">↑ Scroll within each screen · Click pills to switch screens</div>
+
+<script>
+const navMap = { dashboard: 'nav-dashboard', log: 'nav-log', analytics: 'nav-analytics', recipes: 'nav-recipes', profile: 'nav-profile' };
+const pillIds = ['landing', 'dashboard', 'log', 'analytics', 'recipes', 'profile', 'onboarding', 'achievements'];
+
+function show(id) {
+  // screens
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  const target = document.getElementById('screen-' + id);
+  if (target) { target.classList.add('active'); target.scrollTop = 0; }
+
+  // pills
+  document.querySelectorAll('.screen-pill').forEach((p, i) => {
+    p.classList.toggle('active', pillIds[i] === id);
+  });
+
+  // bottom nav
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  if (navMap[id]) document.getElementById(navMap[id])?.classList.add('active');
+
+  // hide bottom nav for special screens
+  const bn = document.getElementById('bottom-nav');
+  bn.style.display = ['landing','onboarding','achievements'].includes(id) ? 'none' : 'flex';
+}
+
+function switchMethod(method, el) {
+  document.querySelectorAll('.method-btn').forEach(b => b.classList.remove('active'));
+  el.classList.add('active');
+  ['photo','voice','barcode','search'].forEach(m => {
+    const el2 = document.getElementById('logger-' + m);
+    if (el2) el2.style.display = m === method ? 'block' : 'none';
+  });
+}
+
+// init
+show('dashboard');
+</script>
+</body>
+</html>
